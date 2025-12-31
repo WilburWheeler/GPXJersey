@@ -1,3 +1,4 @@
+const sheetDbUrl = "YOUR_SHEETDB_URL"; // Replace this!
 
 const allRoutes = [
   {
@@ -6,7 +7,7 @@ const allRoutes = [
     "type": "Cycling",
     "distance": 64.4,
     "elevation": 541,
-    "likes": parseInt(localStorage.getItem('likes-1')) || 0,
+    "likes": 0, // Will be overwritten by SheetDB
     "lat": 49.19364,
     "lon": -2.12765,
     "gpxFile": "Jersey inland.gpx"
@@ -17,7 +18,7 @@ const allRoutes = [
     "type": "Cycling",
     "distance": 68.9,
     "elevation": 656,
-    "likes": parseInt(localStorage.getItem('likes-2')) || 0,
+    "likes": 0, // Will be overwritten by SheetDB
     "lat": 49.19398,
     "lon": -2.12872,
     "gpxFile": "Lap of Jersey.gpx"
@@ -26,13 +27,26 @@ const allRoutes = [
 
 let userLat = null, userLon = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await syncLikesFromSheet();
     renderRoutes(allRoutes);
+    
     document.getElementById('searchInput').addEventListener('input', filterAndSort);
     document.getElementById('filterType').addEventListener('change', filterAndSort);
     document.getElementById('filterDifficulty').addEventListener('change', filterAndSort);
     document.getElementById('sortBy').addEventListener('change', filterAndSort);
 });
+
+async function syncLikesFromSheet() {
+    try {
+        const response = await fetch(sheetDbUrl);
+        const data = await response.json();
+        data.forEach(row => {
+            const route = allRoutes.find(r => r.id == row.id);
+            if (route) route.likes = parseInt(row.likes) || 0;
+        });
+    } catch (e) { console.error("Database sync failed."); }
+}
 
 function getDifficulty(dist, ele) {
     if (ele > 600 || dist > 60) return "Hard";
@@ -55,68 +69,53 @@ function renderRoutes(routes) {
             <h3>${route.name}</h3>
             <div class="route-stats">
                 <div>
-                    <span class="tag" style="background:#2E8B57">${route.type}</span>
+                    <span class="tag" style="background:var(--primary-green)">${route.type}</span>
                     <span class="tag ${diff.toLowerCase()}">${diff}</span>
                 </div>
                 <button class="like-btn" id="like-btn-${route.id}" 
                         onclick="addLike(${route.id})" 
-                        ${hasLiked ? 'disabled style="opacity: 0.5; cursor: default;"' : ''}>
+                        ${hasLiked ? 'disabled' : ''}>
                     ❤️ <span id="like-count-${route.id}">${route.likes}</span>
                 </button>
             </div>
             <p>📏 ${route.distance}km | ⛰️ ${route.elevation}m</p>
-            // Make sure your link in app.js looks like this:
             <a href="${route.gpxFile}" class="download-btn" download="${route.name}.gpx">Download GPX</a>
         `;
         grid.appendChild(card);
 
-        // Render the Full Route in Red
-        const map = L.map(`map-${route.id}`, {
-            zoomControl: false, 
-            attributionControl: false,
-            dragging: false, // Static feel for cards
-            scrollWheelZoom: false
-        });
-
+        // Render Red Route Line
+        const map = L.map(`map-${route.id}`, {zoomControl: false, attributionControl: false});
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // This plugin loads the file and draws the red line
         new L.GPX(route.gpxFile, {
             async: true,
-            polyline_options: {
-                color: 'red',
-                opacity: 0.75,
-                weight: 3,
-                lineCap: 'round'
-            },
-            marker_options: {
-                startIconUrl: null, // Hide start/end icons to keep it clean
-                endIconUrl: null,
-                shadowUrl: null
-            }
+            polyline_options: { color: 'red', opacity: 0.8, weight: 4 },
+            marker_options: { startIconUrl: null, endIconUrl: null, shadowUrl: null }
         }).on('loaded', function(e) {
-            map.fitBounds(e.target.getBounds()); // Automatically zooms map to show whole route
+            map.fitBounds(e.target.getBounds());
         }).addTo(map);
     });
 }
 
-function addLike(id) {
-    // Check if already liked to prevent manual console spamming
+async function addLike(id) {
     if (localStorage.getItem(`hasLiked-${id}`) === 'true') return;
-
+    
     const route = allRoutes.find(r => r.id === id);
     route.likes++;
-    
-    // Save the new count and the "voted" status
-    localStorage.setItem(`likes-${id}`, route.likes);
-    localStorage.setItem(`hasLiked-${id}`, 'true');
 
-    // Update UI
     document.getElementById(`like-count-${id}`).innerText = route.likes;
+    localStorage.setItem(`hasLiked-${id}`, 'true');
+    
     const btn = document.getElementById(`like-btn-${id}`);
     btn.disabled = true;
-    btn.style.opacity = "0.5";
-    btn.style.cursor = "default";
+
+    try {
+        await fetch(`${sheetDbUrl}/id/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ "likes": route.likes })
+        });
+    } catch (e) { console.error("SheetDB update failed."); }
 }
 
 function filterAndSort() {
@@ -134,47 +133,31 @@ function filterAndSort() {
 
     if (sortBy === 'likes') processed.sort((a,b) => b.likes - a.likes);
     else if (sortBy === 'distance') processed.sort((a,b) => a.distance - b.distance);
-    // ... add nearMe logic if needed ...
+    else if (sortBy === 'nearMe' && userLat) {
+        processed.sort((a,b) => calculateDistance(userLat, userLon, a.lat, a.lon) - calculateDistance(userLat, userLon, b.lat, b.lon));
+    }
 
     renderRoutes(processed);
 }
 
+function getUserLocation() {
+    const status = document.getElementById('locationStatus');
+    navigator.geolocation.getCurrentPosition((pos) => {
+        userLat = pos.coords.latitude;
+        userLon = pos.coords.longitude;
+        status.textContent = "Location found! Sorting...";
+        document.getElementById('sortBy').value = 'nearMe';
+        filterAndSort();
+    }, () => { status.textContent = "Location access denied."; });
 }
-const sheetDbUrl = "https://docs.google.com/spreadsheets/d/1PbXrT5YcwL9xg6KFvbJxswbtIM4sBRX3XW0587657pI/edit?gid=0#gid=0";
 
-async function syncLikesFromSheet() {
-    try {
-        const response = await fetch(sheetDbUrl);
-        const data = await response.json();
-        
-        data.forEach(row => {
-            const route = allRoutes.find(r => r.id == row.id);
-            if (route) route.likes = parseInt(row.likes);
-        });
-    } catch (e) {
-        console.error("SheetDB sync failed.");
-    }
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-async function addLike(id) {
-    if (localStorage.getItem(`hasLiked-${id}`) === 'true') return;
-    const route = allRoutes.find(r => r.id === id);
-    route.likes++;
 
-    document.getElementById(`like-count-${id}`).innerText = route.likes;
-    localStorage.setItem(`hasLiked-${id}`, 'true');
-
-    // SheetDB Update
-    try {
-        await fetch(`${sheetDbUrl}/id/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "likes": route.likes })
-        });
-    } catch (e) {
-        console.error("Failed to update SheetDB");
-    }
-
-    const btn = document.getElementById(`like-btn-${id}`);
-    btn.disabled = true;
-    btn.style.opacity = "0.5";
-}
+function openUploadModal() { document.getElementById('uploadModal').style.display = 'block'; }
+function closeUploadModal() { document.getElementById('uploadModal').style.display = 'none'; }
