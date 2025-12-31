@@ -3,7 +3,7 @@ const allRoutes = [
   {
     "id": 1,
     "name": "Jersey Inland",
-    "type": "Road Cycling",
+    "type": "Cycling",
     "distance": 64.4,
     "elevation": 541,
     "likes": parseInt(localStorage.getItem('likes-1')) || 0,
@@ -14,7 +14,7 @@ const allRoutes = [
   {
     "id": 2,
     "name": "Lap of Jersey",
-    "type": "Road Cycling",
+    "type": "Cycling",
     "distance": 68.9,
     "elevation": 656,
     "likes": parseInt(localStorage.getItem('likes-2')) || 0,
