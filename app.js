@@ -138,11 +138,7 @@ function filterAndSort() {
 
     renderRoutes(processed);
 }
-function resetAllLikes() {
-    if(confirm("Are you sure you want to reset all likes and your voting status?")) {
-        localStorage.clear();
-        location.reload(); // Refreshes the page to show the changes
-    }
+
 }
 const sheetDbUrl = "https://docs.google.com/spreadsheets/d/1PbXrT5YcwL9xg6KFvbJxswbtIM4sBRX3XW0587657pI/edit?gid=0#gid=0";
 
