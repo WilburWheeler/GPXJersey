@@ -4,7 +4,7 @@ const allRoutes = [
   {
     "id": 1,
     "name": "Jersey Inland",
-    "type": "Cycling",
+    "type": "Road Cycling",
     "distance": 64.4,
     "elevation": 541,
     "likes": 0, // Will be overwritten by SheetDB
@@ -15,7 +15,7 @@ const allRoutes = [
   {
     "id": 2,
     "name": "Lap of Jersey",
-    "type": "Cycling",
+    "type": "Road Cycling",
     "distance": 68.9,
     "elevation": 656,
     "likes": 0, // Will be overwritten by SheetDB
