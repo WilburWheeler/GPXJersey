@@ -1,4 +1,4 @@
-const sheetDbUrl = "YOUR_SHEETDB_URL"; // Replace this!
+const sheetDbUrl = "https://sheetdb.io/api/v1/3rcd2azl3nvuo"; // Replace this!
 
 const allRoutes = [
   {
