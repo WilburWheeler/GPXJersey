@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "name": "Jersey Inland",
+    "type": "Road Cycling",
+    "distance": 64.4,
+    "elevation": 541,
+    "likes": 0,
+    "lat": 49.19364,
+    "lon": -2.12765,
+    "gpxFile": "Jersey inland.gpx"
+  },
+  {
+    "id": 2,
+    "name": "Lap of Jersey",
+    "type": "Road Cycling",
+    "distance": 68.9,
+    "elevation": 656,
+    "likes": 0,
+    "lat": 49.19398,
+    "lon": -2.12872,
+    "gpxFile": "Lap of Jersey.gpx"
+  }
+]

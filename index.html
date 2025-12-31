@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPXJersey | Explore the Island</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+    <header>
+        <div class="logo">GPXJersey</div>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search routes...">
+            <select id="filterType">
+                <option value="all">All Sports</option>
+                <option value="Cycling">Cycling</option>
+                <option value="Hiking">Hiking</option>
+                <option value="Running">Running</option>
+            </select>
+            <select id="sortBy">
+                <option value="likes">Most Liked</option>
+                <option value="distance">Distance</option>
+                <option value="elevation">Elevation</option>
+                <option value="nearMe">Near Me</option>
+            </select>
+            <select id="filterDifficulty">
+               <option value="all">All Difficulties</option>
+               <option value="Easy">Easy</option>
+               <option value="Moderate">Moderate</option>
+               <option value="Hard">Hard</option>
+            </select>
+        </div>
+
+        <button class="upload-btn" onclick="openUploadModal()">Upload Route</button>
+    </header>
+
+    <section class="hero">
+        <h1>Find Your Path in Jersey</h1>
+        <p>Discover local routes, tracked by locals.</p>
+        <button onclick="getUserLocation()">Find Routes Near Me</button>
+        <p id="locationStatus"></p>
+    </section>
+
+    <main id="routesGrid" class="grid-container">
+        </main>
+
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUploadModal()">&times;</span>
+            <h2>Upload a Route</h2>
+            <form action="https://formspree.io/f/xqekvyyk" method="POST" enctype="multipart/form-data">
+                <label>Route Name:</label>
+                <input type="text" name="routeName" required>
+                
+                <label>Your Email:</label>
+                <input type="email" name="email" required>
+
+                <label>Upload GPX File:</label>
+                <input type="file" name="upload" accept=".gpx" required>
+
+                <button type="submit">Submit Route</button>
+            </form>
+        </div>
+    </div>
+<button onclick="resetAllLikes()" style="margin: 10px; padding: 5px;">Admin: Reset Likes</button>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
